@@ -3,10 +3,10 @@ import open3d as o3d
 import time
 
 #total points to be generated = SETS * AMOUNT_OF_POINTS
-SETS = 20
+SETS = 1
 AMOUNT_OF_POINTS = 100
 
-#Some example shapes for chaos game
+#Simple shapes for chaos game
 vertices_pyramid = np.array([
     [0, 0, 0],        
     [1, 0, 0],        
@@ -26,6 +26,8 @@ vertices_cube = np.array([
     [ 0.5, -0.5,  0.5],
     [ 0.5,  0.5,  0.5]
 ])
+vertices_cube += 0.5
+
 
 phi = (1 + np.sqrt(5)) / 2  
 
@@ -45,8 +47,56 @@ vertices_dodecahedron = np.array([
     [-phi, 0, -1/phi], [phi, 0, -1/phi], [-phi, 0, 1/phi], [phi, 0, 1/phi]
 ])
 
-shapes = [vertices_pyramid, vertices_cube, vertices_dodecahedron]
-shape_names = ["Pyramid", "Cube", "Dodecahedron"]
+vertices_dodecahedron += 0.5
+
+
+# More advanced shapes
+def generate_barnsley_fern_3d(n_points=100000, twist_factor=0.05, depth_factor=0.02):
+    # Transformation probabilities
+    probabilities = np.array([0.01, 0.85, 0.07, 0.07])
+    
+    # Affine transformation matrices and translation vectors
+    transformations = [
+        (np.array([[0, 0], [0, 0.16]]), np.array([0, 0])),  # Stem
+        (np.array([[0.85, 0.04], [-0.04, 0.85]]), np.array([0, 1.6])),  # Main transformation
+        (np.array([[0.2, -0.26], [0.23, 0.22]]), np.array([0, 1.6])),  # Left leaflet
+        (np.array([[-0.15, 0.28], [0.26, 0.24]]), np.array([0, 0.44]))  # Right leaflet
+    ]
+    
+    # Generate points
+    points = np.zeros((n_points, 3))  # Now fully 3D
+
+    x, y, z = 0, 0, 0  # Starting point
+
+    for i in range(n_points):
+        r = np.random.rand()
+        if r < probabilities[0]:
+            idx = 0
+        elif r < probabilities[:2].sum():
+            idx = 1
+        elif r < probabilities[:3].sum():
+            idx = 2
+        else:
+            idx = 3
+
+        A, b = transformations[idx]
+        x, y = A @ np.array([x, y]) + b
+        
+        # 3D Effects:
+        z = depth_factor * y  # Add depth based on height
+        x_rot = x * np.cos(twist_factor * y) - z * np.sin(twist_factor * y)
+        z_rot = x * np.sin(twist_factor * y) + z * np.cos(twist_factor * y)
+        
+        points[i] = [x_rot, y, z_rot]  # Apply rotation
+
+    return points
+
+# Generate the 3D fern
+vertices_fern = generate_barnsley_fern_3d(10000, twist_factor=0.05, depth_factor=0.02)
+
+
+shapes = [vertices_pyramid, vertices_cube, vertices_dodecahedron, vertices_fern]
+shape_names = ["Pyramid", "Cube", "Dodecahedron", "Barnsley Fern"]
 current_shape = 0  # Start with the first shape
 vertices = shapes[current_shape]
 fraction = 2
@@ -69,6 +119,9 @@ b_line_set.points = o3d.utility.Vector3dVector(basis)
 b_line_set.lines = o3d.utility.Vector2iVector(b_lines)
 b_line_set.colors = o3d.utility.Vector3dVector([[1,0,0],[0,1,0],[0,0,1]])
 vis.add_geometry(b_line_set)
+
+
+
 
 def generate_points(vertices, num_points, start_point=None, fraction=2 ):
     """Generates points for the Sierpiński Tetrahedron using the Chaos Game method.
@@ -158,6 +211,7 @@ def switch_shape(delta):
     current_shape = (current_shape + delta) % len(shapes)
     vertices = shapes[current_shape]
     print(f"Switched to {shape_names[current_shape]}")
+    #print(current_shape)
     render_points(vis, vertices, fraction)
     
 def render_points(vis, vertices, fraction):
@@ -191,14 +245,14 @@ render_points(vis, vertices, fraction)
 
 vis.register_key_callback(262, lambda vis: switch_shape(1))  # Right Arrow (→) to next shape
 vis.register_key_callback(263, lambda vis: switch_shape(-1)) # Left Arrow (←) to previous shape
-vis.register_key_callback(265, lambda vis: change_fraction(1))   # Up Arrow (↑) → Increment
-vis.register_key_callback(264, lambda vis: change_fraction(-1))  # Down Arrow (↓) → Decrement
+vis.register_key_callback(265, lambda vis: change_fraction(-1))   # Up Arrow (↑) → Increment step size
+vis.register_key_callback(264, lambda vis: change_fraction(1))  # Down Arrow (↓) → Decrement step size
 vis.register_key_callback(82, reset_pointcloud) 
 
-vis.register_key_callback(85, lambda vis: adjust_sets(1))   # U → Increment sets
-vis.register_key_callback(74, lambda vis: adjust_sets(-1))  # J → Decrement sets
-vis.register_key_callback(73, lambda vis: adjust_amount_of_points(1))      # I → Next shape
-vis.register_key_callback(75, lambda vis: adjust_amount_of_points(-1))     # K → Previous shape
+vis.register_key_callback(85, lambda vis: adjust_sets(1))   # U → Increment sets (of points)
+vis.register_key_callback(74, lambda vis: adjust_sets(-1))  # J → Decrement sets (of points)
+vis.register_key_callback(73, lambda vis: adjust_amount_of_points(1))      # I → Increase point amount
+vis.register_key_callback(75, lambda vis: adjust_amount_of_points(-1))     # K → Decrement point amount
  
 vis.run()
 vis.destroy_window()
