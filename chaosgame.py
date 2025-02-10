@@ -123,10 +123,29 @@ def change_fraction(delta):
     global fraction
     fraction += delta
     if fraction == 0:
-        print("fraction was set to 0 -> reset to 1")
+        print("Fraction was set to 0 -> reset to 1")
         fraction = 1
     print(f"Fraction: {fraction}")
     render_points(vis, vertices, fraction)
+    
+def adjust_sets(delta):
+    global SETS
+    SETS += delta
+    if SETS == 0:
+        print("SETS was set to 0 -> reset to 1")
+        SETS = 1
+    print(f"SETS (of points): {SETS}")
+    render_points(vis, vertices, fraction)
+    
+def adjust_amount_of_points(delta):
+    global AMOUNT_OF_POINTS
+    AMOUNT_OF_POINTS += delta
+    if AMOUNT_OF_POINTS == 0:
+        print("AMOUNT_OF_POINTS was set to 0 -> reset to 1")
+        AMOUNT_OF_POINTS = 1
+    print(f"AMOUNT_OF_POINTS (per set): {AMOUNT_OF_POINTS}")
+    render_points(vis, vertices, fraction)
+
     
 def reset_pointcloud(vis):
     global pcd
@@ -169,7 +188,7 @@ def render_points(vis, vertices, fraction):
         time.sleep(0.01)  # Small delay for visualization effect
         #print(" ---------- loop END ")
         #print()
-    print(len(np.asarray(pcd.points)))
+    print("Total points:", len(np.asarray(pcd.points)))
 
 render_points(vis, vertices, fraction)
 
@@ -178,6 +197,11 @@ vis.register_key_callback(263, lambda vis: switch_shape(-1)) # Left Arrow (←) 
 vis.register_key_callback(265, lambda vis: change_fraction(1))   # Up Arrow (↑) → Increment
 vis.register_key_callback(264, lambda vis: change_fraction(-1))  # Down Arrow (↓) → Decrement
 vis.register_key_callback(82, reset_pointcloud) 
+
+vis.register_key_callback(85, lambda vis: adjust_sets(1))   # U → Increment sets
+vis.register_key_callback(74, lambda vis: adjust_sets(-1))  # J → Decrement sets
+vis.register_key_callback(73, lambda vis: adjust_amount_of_points(1))      # I → Next shape
+vis.register_key_callback(75, lambda vis: adjust_amount_of_points(-1))     # K → Previous shape
 
 print(len(np.asarray(pcd.points)))
  
