@@ -3,55 +3,10 @@ import open3d as o3d
 import time
 
 #total points to be generated = SETS * AMOUNT_OF_POINTS
-SETS = 10
+SETS = 20
 AMOUNT_OF_POINTS = 100
 
-def generate_points(vertices, num_points, start_point=None, fraction=2 ):
-    """Generates points for the Sierpiński Tetrahedron using the Chaos Game method.
-    
-    Args:
-        num_points (int): Number of points to generate.
-        start_point (array-like, optional): Starting point for the fractal generation.
-        fraction: How much of the distance to move each iteration (1/fraction)
-    
-    Returns:
-        np.ndarray: Array of generated points.
-    """
-    #print("given point:", start_point)
-    # Use given start point or default to the centroid
-    if start_point is None:
-        start_point = np.mean(vertices, axis=0)
-
-    #print(len(vertices))
-    #initial point
-    points = np.zeros((num_points,3))
-    vertex = vertices[np.random.randint(0, len(vertices))]
-    new_point = (start_point + vertex) / fraction
-    points[0] = new_point
-
-    for i in range(1,num_points):
-        #print(i)
-        # pick random point to go towards
-        vertex = vertices[np.random.randint(0, len(vertices))]
-        # mid 
-        new_point = (points[i-1] + vertex) / fraction
-        #print(new_point)
-        points[i] = new_point
-    #print("NEW POINTS", points)
-
-    return np.array(points)
-
-def point_check(pcdpoints):
-    # Convert array to tuples for easy comparison
-    points_tuples = [tuple(row) for row in np.asarray(pcdpoints) ]
-
-    # Count occurrences
-    unique_points, counts = np.unique(points_tuples, axis=0, return_counts=True)
-
-    # Print results
-    for point, count in zip(unique_points, counts):
-        print(f"Point {point} appears {count} times")
-
+#Some example shapes for chaos game
 vertices_pyramid = np.array([
     [0, 0, 0],        
     [1, 0, 0],        
@@ -101,7 +56,7 @@ vis = o3d.visualization.VisualizerWithKeyCallback()
 vis.create_window(visible=True, width = 600, height = 600)
 
 # Create a dummy PointCloud with one initial point to avoid the empty point warning
-initial_point = np.array([[0, 0, 0]])
+initial_point = np.array([[0.5, 0.5, 0.5]])
 #initial_point = np.array([[0, 0, 0]])
 pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(initial_point)
@@ -115,9 +70,51 @@ b_line_set.lines = o3d.utility.Vector2iVector(b_lines)
 b_line_set.colors = o3d.utility.Vector3dVector([[1,0,0],[0,1,0],[0,0,1]])
 vis.add_geometry(b_line_set)
 
+def generate_points(vertices, num_points, start_point=None, fraction=2 ):
+    """Generates points for the Sierpiński Tetrahedron using the Chaos Game method.
+    
+    Args:
+        num_points (int): Number of points to generate.
+        start_point (array-like, optional): Starting point for the fractal generation.
+        fraction: How much of the distance to move each iteration (1/fraction)
+    
+    Returns:
+        np.ndarray: Array of generated points.
+    """
+    #print("given point:", start_point)
+    # Use given start point or default to the centroid
+    if start_point is None:
+        start_point = np.mean(vertices, axis=0)
 
+    #print(len(vertices))
+    #initial point
+    points = np.zeros((num_points,3))
+    vertex = vertices[np.random.randint(0, len(vertices))]
+    new_point = (start_point + vertex) / fraction
+    points[0] = new_point
 
-#print(np.asarray(pcd.points)[-1])
+    for i in range(1,num_points):
+        #print(i)
+        # pick random point to go towards
+        vertex = vertices[np.random.randint(0, len(vertices))]
+        # mid 
+        new_point = (points[i-1] + vertex) / fraction
+        #print(new_point)
+        points[i] = new_point
+    #print("NEW POINTS", points)
+
+    return np.array(points)
+
+def point_check(pcdpoints):
+    # Convert array to tuples for easy comparison
+    points_tuples = [tuple(row) for row in np.asarray(pcdpoints) ]
+
+    # Count occurrences
+    unique_points, counts = np.unique(points_tuples, axis=0, return_counts=True)
+
+    # Print results
+    for point, count in zip(unique_points, counts):
+        print(f"Point {point} appears {count} times")
 
 def change_fraction(delta):
     global fraction
@@ -202,8 +199,6 @@ vis.register_key_callback(85, lambda vis: adjust_sets(1))   # U → Increment se
 vis.register_key_callback(74, lambda vis: adjust_sets(-1))  # J → Decrement sets
 vis.register_key_callback(73, lambda vis: adjust_amount_of_points(1))      # I → Next shape
 vis.register_key_callback(75, lambda vis: adjust_amount_of_points(-1))     # K → Previous shape
-
-print(len(np.asarray(pcd.points)))
  
 vis.run()
 vis.destroy_window()
